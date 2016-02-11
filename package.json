@@ -1,0 +1,14 @@
+{
+    "name": "syntheserver",
+    "verson": 0.1,
+    "description": "node.js server for synthesound",
+    "dependencies": {
+        "express": "*",
+        "mongodb": "*"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/tenso/syntheserver.git"
+    },
+    "license": "GPL-3.0"
+}
