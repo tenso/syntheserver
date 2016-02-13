@@ -15,8 +15,29 @@ function close() {
     db.close();
 }
 
+function userExist(email, cb) {
+    userCollection.findOne({email: email}, {
+        "_id": 1
+    }, function (err, result) {
+        if (err) {
+            cb("userExist:" + err, result);
+        } else {
+            if (!result) {
+                cb(null, false);
+            } else {
+                cb(null, true);
+            }
+        }
+    });
+}
+
 function getUser(email, cb) {
-    userCollection.findOne({email: email}, {}, function (err, result) {
+    userCollection.findOne({email: email}, {
+        email: 1,
+        info: 1,
+        settings: 1,
+        "files.name": 1
+    }, function (err, result) {
         if (err || !result) {
             cb("getUser: no such user:" + email);
         } else {
@@ -25,18 +46,22 @@ function getUser(email, cb) {
     });
 }
 
-function insertUser(name, email, password, cb) {
+function addUser(name, email, password, cb) {
     if (name === "" || email === "" || password === "") {
-        cb("insertUser: field null");
+        cb("addUser: field null");
     } else {
-        getUser(email, function (err, result) {
-            if (result) {
-                cb("insertUser: user exist:" + email, result);
+        userExist(email, function (err, result) {
+            if (err) {
+                cb("addUser:" + err);
+            } else if (result) {
+                cb("addUser: user exist:" + email, result);
             } else {
                 userCollection.insert({
-                    name: name,
                     email: email,
-                    password: password,
+                    info: {
+                        name: name,
+                        password: password
+                    },
                     settings: {
                         debug: false
                     },
@@ -47,11 +72,47 @@ function insertUser(name, email, password, cb) {
     }
 }
 
+function removeUser(email, cb) {
+    userExist(email, function (err, result) {
+        if (err) {
+            cb("removeUser:" + err);
+        } else if (result) {
+            userCollection.remove({email: email}, {w: w}, cb);
+        } else {
+            cb("removeUser: no such user:" + email);
+        }
+    });
+}
+
+function updateUser(email, newEmail, newName, newPassword, cb) {
+    userExist(email, function (err, result) {
+        if (err) {
+            cb("updateUser:" + err);
+        } else if (result) {
+            userCollection.update({email: email}, {
+                "$set": {
+                    email: newEmail,
+                    info: {
+                        name: newName,
+                        password: newPassword
+                    }
+                }
+            }, {w: w, multi: true}, cb);
+        } else {
+            cb("updateUser: no such user:" + email);
+        }
+    });
+}
+
+function users() {
+    return userCollection;
+}
+
 function getUserFile(email, name, cb) {
-    getUser(email, function (err, result) {
+    userExist(email, function (err, result) {
         if (err) {
             cb("getUserFile:" + err);
-        } else {
+        } else if (result) {
             userCollection.findOne({email: email}, {
                 files: {
                     "$elemMatch": {
@@ -59,6 +120,22 @@ function getUserFile(email, name, cb) {
                     }
                 }
             }, cb);
+        } else {
+            cb("getUserFile: no such user:" + email);
+        }
+    });
+}
+
+
+function getUserFileNames(email, cb) {
+    userCollection.findOne({email: email}, {
+        email: 1,
+        "files.name": 1
+    }, function (err, result) {
+        if (err || !result) {
+            cb("getUser: no such user:" + email);
+        } else {
+            cb(err, result);
         }
     });
 }
@@ -104,43 +181,46 @@ function removeUserFile(email, name, cb) {
     });
 }
 
-function removeUser(email, cb) {
-    getUser(email, function (err, result) {
+function updateUserFile(email, name, dataObject, cb) {
+    getUserFile(email, name, function (err, result) {
         if (err) {
-            cb("removeUser:" + err);
-        } else {
-            userCollection.remove({email: email}, {w: w}, cb);
+            cb("updateUserFile:" + err);
+        } else if (result) {
+            if (!result.files) {
+                cb("updateUserFile: fileDoesNotExist:" + name);
+            } else {
+                userCollection.update({email: email, "files.name": name}, {
+                    "$set": {
+                        "files.$.data": JSON.stringify(dataObject)
+                    }
+                }, {w: w}, cb);
+            }
         }
     });
 }
 
-function updateUser(email, newEmail, newName, newPassword, cb) {
-    getUser(email, function (err, result) {
-        if (err) {
-            cb("updateUser:" + err);
-        } else {
-            userCollection.update({email: email}, {
-                "$set": {
-                    email: newEmail,
-                    name: newName,
-                    password: newPassword
-                }
-            }, {w: w, multi: true}, cb);
-        }
-    });
-}
-
-function users() {
-    return userCollection;
-}
+/*EXAMPLE:
+var stream = db.users().find().stream();
+stream.on("data", function (item) {
+    log.info(item);
+});
+stream.on("end", function (item) {
+    log.info("<---done");
+});*/
 
 exports.setDb = setDb;
 exports.close = close;
-exports.insertUser = insertUser;
+
+exports.userExist = userExist;
+exports.addUser = addUser;
+exports.getUser = getUser;
 exports.removeUser = removeUser;
 exports.updateUser = updateUser;
-exports.users = users;
+
 exports.addUserFile = addUserFile;
 exports.getUserFile = getUserFile;
-exports.getUser = getUser;
+exports.getUserFileNames = getUserFileNames;
 exports.removeUserFile = removeUserFile;
+exports.updateUserFile = updateUserFile;
+
+exports.users = users;

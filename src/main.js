@@ -26,7 +26,7 @@ MongoClient.connect(url, function (err, database) {
         db.close();
     });*/
 
-    db.insertUser("Test Person", "test.person@mail.com", "abc123", function (err, result) {
+    db.addUser("Test Person", "test.person@mail.com", "abc123", function (err, result) {
         if (err) {
             log.info(err);
         }
@@ -34,37 +34,26 @@ MongoClient.connect(url, function (err, database) {
             if (err) {
                 log.info(err);
             }
-            db.removeUser("tests.person@mail.com", function (err, results) {
+
+            db.addUserFile("test.person@mail.com", "file1.json", {data: "yes", dota: "no"}, function (err, result) {
                 if (err) {
-                    log.info(err);
+                    console.log(err);
                 }
-                db.addUserFile("test.person@mail.com", "file1.json", {data: "yes", dota: "no"}, function (err, result) {
+                db.addUserFile("test.person@mail.com", "file2.json", {data: "no", dota: "2"}, function (err, result) {
                     if (err) {
                         console.log(err);
                     }
-                    db.addUserFile("test.person@mail.com", "file2.json", {data: "no", dota: "2"}, function (err, result) {
+                    db.getUser("test.person@mail.com", function (err, result) {
                         if (err) {
-                            console.log(err);
+                            log.info(err);
+                        } else {
+                            log.info(result);
                         }
-                        /*var stream = db.users().find().stream();
-                        stream.on("data", function (item) {
-                            log.info(item);
-                        });
-                        stream.on("end", function (item) {
-                            log.info("<---done");
-                        });*/
-                        db.getUserFile("test.person@mail.com", "file1.json", function (err, result) {
+                        db.updateUserFile("test.person@mail.com", "file2.json", {data: "no-updated", dota: "2 up!"}, function (err, result) {
                             if (err) {
-                                log.info(err);
-                            } else {
-                                log.info(result);
+                                console.log(err);
                             }
-                            db.removeUserFile("test.person@mail.com", "file1.json", function (err, result) {
-                                if (err) {
-                                    log.info(err);
-                                }
-                                db.close();
-                            });
+                            db.close();
                         });
                     });
                 });
