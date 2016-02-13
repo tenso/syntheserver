@@ -4,7 +4,14 @@
 
 var db,
     userCollection,
-    w = 1;
+    w = 1,
+    userProjection = {
+        "_id": 0,
+        email: 1,
+        info: 1,
+        settings: 1,
+        "files.name": 1
+    };
 
 function setDb(database) {
     db = database;
@@ -32,12 +39,7 @@ function userExist(email, cb) {
 }
 
 function getUser(email, cb) {
-    userCollection.findOne({email: email}, {
-        email: 1,
-        info: 1,
-        settings: 1,
-        "files.name": 1
-    }, function (err, result) {
+    userCollection.findOne({email: email}, userProjection, function (err, result) {
         if (err || !result) {
             cb("getUser: no such user:" + email);
         } else {
@@ -104,8 +106,15 @@ function updateUser(email, newEmail, newName, newPassword, cb) {
     });
 }
 
-function users() {
-    return userCollection;
+function getUsers(cb) {
+    var stream = userCollection.find({}, userProjection).stream(),
+        all = [];
+    stream.on("data", function (item) {
+        all.push(item);
+    });
+    stream.on("end", function (item) {
+        cb(null, all);
+    });
 }
 
 function getUserFile(email, name, cb) {
@@ -199,21 +208,13 @@ function updateUserFile(email, name, dataObject, cb) {
     });
 }
 
-/*EXAMPLE:
-var stream = db.users().find().stream();
-stream.on("data", function (item) {
-    log.info(item);
-});
-stream.on("end", function (item) {
-    log.info("<---done");
-});*/
-
 exports.setDb = setDb;
 exports.close = close;
 
 exports.userExist = userExist;
 exports.addUser = addUser;
 exports.getUser = getUser;
+exports.getUsers = getUsers;
 exports.removeUser = removeUser;
 exports.updateUser = updateUser;
 
@@ -222,5 +223,3 @@ exports.getUserFile = getUserFile;
 exports.getUserFileNames = getUserFileNames;
 exports.removeUserFile = removeUserFile;
 exports.updateUserFile = updateUserFile;
-
-exports.users = users;
