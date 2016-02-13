@@ -3,8 +3,8 @@
     "verson": 0.1,
     "description": "node.js server for synthesound",
     "dependencies": {
-        "express": "*",
-        "mongodb": "*"
+        "express": "4.13.4",
+        "mongodb": "2.1.6"
     },
     "repository": {
         "type": "git",
