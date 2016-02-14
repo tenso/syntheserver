@@ -15,6 +15,7 @@ var db = require("./database.js"),
     url = "mongodb://localhost:27017/synthesound",
     express = require("express"),
     session = require("express-session"),
+    bodyParser = require("body-parser"),
     app = express(),
     staticContentPath = "../../synthesound/src/",
     noLogin = false;
@@ -112,7 +113,7 @@ function addSessionRoutes(app) {
     app.get("/logout", function (req, res) {
         req.session.destroy();
         res.json({
-            err: 0,
+            ok: 1,
             login: false
         });
     });
@@ -132,7 +133,7 @@ function addSessionRoutes(app) {
             getUser(req.session.email, res);
         } else {
             res.json({
-                err: 0,
+                ok: 1,
                 login: false
             });
         }
@@ -162,10 +163,22 @@ function addSessionRoutes(app) {
         });
     });
 
+    app.post("/users/:email/files/:file", validUser, function (req, res) {
+        log.info(req.params.email + " add file:" + req.params.file + " with body " + JSON.stringify(req.body));
+        db.addUserFile(req.params.email, req.params.file, req.body.data, function (err, result) {
+            if (err) {
+                res.json(errorJson("post", "/users/:email/files/:file", err));
+            } else {
+                res.json(result);
+            }
+        });
+    });
+
     return app;
 }
 
 function dbConnected() {
+    app.use(bodyParser.json());
     addOpenRoutes(app);
     addSession(app);
     addSessionRoutes(app);

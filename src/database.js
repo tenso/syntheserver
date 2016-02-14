@@ -176,22 +176,19 @@ function getUserFileNames(email, cb) {
 }
 
 function addUserFile(email, name, dataObject, cb) {
+    //FIXME: userFileExists() so err can be caught
     getUserFile(email, name, function (err, result) {
-        if (err) {
-            cb("addUserFile:" + err);
-        } else if (result) {
-            if (result.files) {
-                cb("addUserFile: fileExist:" + name);
-            } else {
-                userCollection.update({email: email}, {
-                    "$push": {
-                        files: {
-                            name: name,
-                            data: JSON.stringify(dataObject)
-                        }
+        if (result) {
+            cb("addUserFile: fileExist:" + name, result);
+        } else {
+            userCollection.update({email: email}, {
+                "$push": {
+                    files: {
+                        name: name,
+                        data: JSON.stringify(dataObject)
                     }
-                }, {w: w}, cb);
-            }
+                }
+            }, {w: w}, cb);
         }
     });
 }
