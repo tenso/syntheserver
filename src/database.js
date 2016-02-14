@@ -96,12 +96,29 @@ function updateUser(email, newEmail, newName, newPassword, cb) {
                     email: newEmail,
                     info: {
                         name: newName,
-                        password: newPassword
+                        password: newPassword,
+                        admin: false
                     }
                 }
-            }, {w: w, multi: true}, cb);
+            }, {w: w}, cb);
         } else {
             cb("updateUser: no such user:" + email);
+        }
+    });
+}
+
+function setAdmin(email, admin, cb) {
+    userExist(email, function (err, result) {
+        if (err) {
+            cb("setAdmin:" + err);
+        } else if (result) {
+            userCollection.update({email: email}, {
+                "$set": {
+                    "info.admin": admin
+                }
+            }, {w: w}, cb);
+        } else {
+            cb("setAdmin: no such user:" + email);
         }
     });
 }
@@ -217,6 +234,7 @@ exports.getUser = getUser;
 exports.getUsers = getUsers;
 exports.removeUser = removeUser;
 exports.updateUser = updateUser;
+exports.setAdmin = setAdmin;
 
 exports.addUserFile = addUserFile;
 exports.getUserFile = getUserFile;

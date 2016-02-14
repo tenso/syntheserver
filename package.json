@@ -4,7 +4,8 @@
     "description": "node.js server for synthesound",
     "dependencies": {
         "express": "4.13.4",
-        "mongodb": "2.1.6"
+        "mongodb": "2.1.6",
+        "express-session": "1.13.0"
     },
     "repository": {
         "type": "git",
