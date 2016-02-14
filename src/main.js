@@ -66,6 +66,17 @@ function addOpenRoutes(app) {
     app.use(express.static(staticContentPath));
 }
 
+function getUser(email, res) {
+    db.getUser(email, function (err, result) {
+        if (err) {
+            res.json(errorJson("get", "/users/" + email, err));
+        } else {
+            delete result.info.password;
+            res.json(result);
+        }
+    });
+}
+
 function addSessionRoutes(app) {
     log.info("add session routes");
 
@@ -79,7 +90,7 @@ function addSessionRoutes(app) {
                     req.session.email = result.email; //FIXME: better: _id
                     req.session.admin = result.info.admin;
                     log.info("login:" + result.email + " admin:" + result.info.admin);
-                    res.redirect("/");
+                    getUser(req.session.email, res);
                 } else {
                     log.warn("failed login, wrong password:" + req.query.email);
                     res.sendStatus(401);
@@ -93,7 +104,10 @@ function addSessionRoutes(app) {
 
     app.get("/logout", function (req, res) {
         req.session.destroy();
-        res.redirect("/");
+        res.json({
+            err: 0,
+            login: false
+        });
     });
 
     app.get("/users/", validAdminUser, function (req, res) {
@@ -101,20 +115,25 @@ function addSessionRoutes(app) {
             if (err) {
                 res.json(errorJson("get", "/users/", err));
             } else {
+                delete result.info.password;
                 res.json(result);
             }
         });
     });
 
+    app.get("/self", function (req, res) {
+        if (req.session.email) {
+            getUser(req.session.email, res);
+        } else {
+            res.json({
+                err: 0,
+                login: false
+            });
+        }
+    });
+
     app.get("/users/:email", validUser, function (req, res) {
-        db.getUser(req.params.email, function (err, result) {
-            if (err) {
-                res.json(errorJson("get", "/users/" + req.params.email, err));
-                log.warn(err);
-            } else {
-                res.json(result);
-            }
-        });
+        getUser(req.params.email, res);
     });
 
     return app;
