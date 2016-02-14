@@ -127,6 +127,9 @@ function getUsers(cb) {
     var stream = userCollection.find({}, userProjection).stream(),
         all = [];
     stream.on("data", function (item) {
+        if (item.info.hasOwnProperty("password")) {
+            delete item.info.password;
+        }
         all.push(item);
     });
     stream.on("end", function (item) {
@@ -145,7 +148,13 @@ function getUserFile(email, name, cb) {
                         name: name
                     }
                 }
-            }, cb);
+            }, function (err, result) {
+                if (err || !result.files) {
+                    cb("getUserFile:" + err);
+                } else if (result) {
+                    return cb(null, result.files[0]);
+                }
+            });
         } else {
             cb("getUserFile: no such user:" + email);
         }
@@ -155,13 +164,13 @@ function getUserFile(email, name, cb) {
 
 function getUserFileNames(email, cb) {
     userCollection.findOne({email: email}, {
-        email: 1,
+        "_id": 0,
         "files.name": 1
     }, function (err, result) {
         if (err || !result) {
             cb("getUser: no such user:" + email);
         } else {
-            cb(err, result);
+            cb(err, result.files);
         }
     });
 }

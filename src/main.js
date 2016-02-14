@@ -16,7 +16,8 @@ var db = require("./database.js"),
     express = require("express"),
     session = require("express-session"),
     app = express(),
-    staticContentPath = "../../synthesound/src/";
+    staticContentPath = "../../synthesound/src/",
+    noLogin = false;
 
 log.info("start");
 
@@ -31,7 +32,9 @@ function errorJson(module, path, info) {
 }
 //FIXME: req.session.admin should probably not be in session cookie!
 function validUser(req, res, next) {
-    if (req.session.email === req.params.email || req.session.admin) {
+    if (noLogin) {
+        next();
+    } else if (req.session.email === req.params.email || req.session.admin) {
         next();
     } else {
         log.warn(req.session.email + " not valid for:" + req.params.email);
@@ -40,7 +43,9 @@ function validUser(req, res, next) {
 }
 
 function validAdminUser(req, res, next) {
-    if (req.session.email && req.session.admin) {
+    if (noLogin) {
+        next();
+    } else if (req.session.email && req.session.admin) {
         next();
     } else {
         log.warn("user not valid admin:" + req.query.email);
@@ -71,7 +76,9 @@ function getUser(email, res) {
         if (err) {
             res.json(errorJson("get", "/users/" + email, err));
         } else {
-            delete result.info.password;
+            if (result.info.hasOwnProperty("password")) {
+                delete result.info.password;
+            }
             res.json(result);
         }
     });
@@ -115,7 +122,6 @@ function addSessionRoutes(app) {
             if (err) {
                 res.json(errorJson("get", "/users/", err));
             } else {
-                delete result.info.password;
                 res.json(result);
             }
         });
@@ -134,6 +140,26 @@ function addSessionRoutes(app) {
 
     app.get("/users/:email", validUser, function (req, res) {
         getUser(req.params.email, res);
+    });
+
+    app.get("/users/:email/files", validUser, function (req, res) {
+        db.getUserFileNames(req.params.email, function (err, result) {
+            if (err) {
+                res.json(errorJson("get", "/users/:email/files/:file", err));
+            } else {
+                res.json(result);
+            }
+        });
+    });
+
+    app.get("/users/:email/files/:file", validUser, function (req, res) {
+        db.getUserFile(req.params.email, req.params.file, function (err, result) {
+            if (err) {
+                res.json(errorJson("get", "/users/:email/files/:file", err));
+            } else {
+                res.json(result);
+            }
+        });
     });
 
     return app;
