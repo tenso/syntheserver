@@ -24,6 +24,7 @@ log.info("start");
 
 function errorJson(module, path, info) {
     return {
+        ok: 0,
         error: {
             module: module,
             path: path,
@@ -168,6 +169,17 @@ function addSessionRoutes(app) {
         db.addUserFile(req.params.email, req.params.file, req.body.data, function (err, result) {
             if (err) {
                 res.json(errorJson("post", "/users/:email/files/:file", err));
+            } else {
+                res.json(result);
+            }
+        });
+    });
+
+    app.delete("/users/:email/files/:file", validUser, function (req, res) {
+        log.info(req.params.email + " delete file:" + req.params.file);
+        db.removeUserFile(req.params.email, req.params.file, function (err, result) {
+            if (err) {
+                res.json(errorJson("delete", "/users/:email/files/:file", err));
             } else {
                 res.json(result);
             }

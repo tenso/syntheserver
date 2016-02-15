@@ -27,7 +27,7 @@ function userExist(email, cb) {
         "_id": 1
     }, function (err, result) {
         if (err) {
-            cb("userExist:" + err, result);
+            cb("userExists", result);
         } else {
             if (!result) {
                 cb(null, false);
@@ -41,7 +41,7 @@ function userExist(email, cb) {
 function getUser(email, cb) {
     userCollection.findOne({email: email}, userProjection, function (err, result) {
         if (err || !result) {
-            cb("getUser: no such user:" + email);
+            cb("noUser");
         } else {
             cb(err, result);
         }
@@ -50,13 +50,13 @@ function getUser(email, cb) {
 
 function addUser(name, email, password, cb) {
     if (name === "" || email === "" || password === "") {
-        cb("addUser: field null");
+        cb("nullData");
     } else {
         userExist(email, function (err, result) {
             if (err) {
-                cb("addUser:" + err);
+                cb(err);
             } else if (result) {
-                cb("addUser: user exist:" + email, result);
+                cb("userExists", result);
             } else {
                 userCollection.insert({
                     email: email,
@@ -77,11 +77,11 @@ function addUser(name, email, password, cb) {
 function removeUser(email, cb) {
     userExist(email, function (err, result) {
         if (err) {
-            cb("removeUser:" + err);
+            cb(err);
         } else if (result) {
             userCollection.remove({email: email}, {w: w}, cb);
         } else {
-            cb("removeUser: no such user:" + email);
+            cb("noUser");
         }
     });
 }
@@ -89,7 +89,7 @@ function removeUser(email, cb) {
 function updateUser(email, newEmail, newName, newPassword, cb) {
     userExist(email, function (err, result) {
         if (err) {
-            cb("updateUser:" + err);
+            cb(err);
         } else if (result) {
             userCollection.update({email: email}, {
                 "$set": {
@@ -102,7 +102,7 @@ function updateUser(email, newEmail, newName, newPassword, cb) {
                 }
             }, {w: w}, cb);
         } else {
-            cb("updateUser: no such user:" + email);
+            cb("noUser");
         }
     });
 }
@@ -110,7 +110,7 @@ function updateUser(email, newEmail, newName, newPassword, cb) {
 function setAdmin(email, admin, cb) {
     userExist(email, function (err, result) {
         if (err) {
-            cb("setAdmin:" + err);
+            cb(err);
         } else if (result) {
             userCollection.update({email: email}, {
                 "$set": {
@@ -118,7 +118,7 @@ function setAdmin(email, admin, cb) {
                 }
             }, {w: w}, cb);
         } else {
-            cb("setAdmin: no such user:" + email);
+            cb("noUser");
         }
     });
 }
@@ -140,7 +140,7 @@ function getUsers(cb) {
 function getUserFile(email, name, cb) {
     userExist(email, function (err, result) {
         if (err) {
-            cb("getUserFile:" + err);
+            cb(err);
         } else if (result) {
             userCollection.findOne({email: email}, {
                 files: {
@@ -150,13 +150,13 @@ function getUserFile(email, name, cb) {
                 }
             }, function (err, result) {
                 if (err || !result.files) {
-                    cb("getUserFile:" + err);
+                    cb(err);
                 } else if (result) {
                     return cb(null, result.files[0]);
                 }
             });
         } else {
-            cb("getUserFile: no such user:" + email);
+            cb("noUser");
         }
     });
 }
@@ -168,7 +168,7 @@ function getUserFileNames(email, cb) {
         "files.name": 1
     }, function (err, result) {
         if (err || !result) {
-            cb("getUser: no such user:" + email);
+            cb("noUser");
         } else {
             cb(err, result.files);
         }
@@ -179,7 +179,7 @@ function addUserFile(email, name, dataObject, cb) {
     //FIXME: userFileExists() so err can be caught
     getUserFile(email, name, function (err, result) {
         if (result) {
-            cb("addUserFile: fileExist:" + name, result);
+            cb("fileExist", result);
         } else {
             userCollection.update({email: email}, {
                 "$push": {
@@ -196,19 +196,17 @@ function addUserFile(email, name, dataObject, cb) {
 function removeUserFile(email, name, cb) {
     getUserFile(email, name, function (err, result) {
         if (err) {
-            cb("removeUserFile:" + err);
-        } else if (result) {
-            if (!result.files) {
-                cb("removeUserFile: fileDoesNotExist:" + name);
-            } else {
-                userCollection.update({email: email}, {
-                    "$pull": {
-                        files: {
-                            name: name
-                        }
+            cb(err);
+        } else if (!result) {
+            cb("fileDoesNotExist");
+        } else {
+            userCollection.update({email: email}, {
+                "$pull": {
+                    files: {
+                        name: name
                     }
-                }, {w: w}, cb);
-            }
+                }
+            }, {w: w}, cb);
         }
     });
 }
@@ -216,10 +214,10 @@ function removeUserFile(email, name, cb) {
 function updateUserFile(email, name, dataObject, cb) {
     getUserFile(email, name, function (err, result) {
         if (err) {
-            cb("updateUserFile:" + err);
+            cb(err);
         } else if (result) {
             if (!result.files) {
-                cb("updateUserFile: fileDoesNotExist:" + name);
+                cb("fileDoesNotExist");
             } else {
                 userCollection.update({email: email, "files.name": name}, {
                     "$set": {
