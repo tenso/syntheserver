@@ -112,6 +112,7 @@ function addSessionRoutes(app) {
     });
 
     app.get("/logout", function (req, res) {
+        log.info("logout:" + req.session.email);
         req.session.destroy();
         res.json({
             ok: 1,
@@ -122,7 +123,7 @@ function addSessionRoutes(app) {
     app.get("/users/", validAdminUser, function (req, res) {
         db.getUsers(function (err, result) {
             if (err) {
-                res.json(errorJson("get", "/users/", err));
+                res.json(errorJson("get", "*", err));
             } else {
                 res.json(result);
             }
@@ -147,7 +148,7 @@ function addSessionRoutes(app) {
     app.get("/users/:email/files", validUser, function (req, res) {
         db.getUserFileNames(req.params.email, function (err, result) {
             if (err) {
-                res.json(errorJson("get", "/users/:email/files/:file", err));
+                res.json(errorJson("get", "*", err));
             } else {
                 res.json(result);
             }
@@ -157,7 +158,7 @@ function addSessionRoutes(app) {
     app.get("/users/:email/files/:file", validUser, function (req, res) {
         db.getUserFile(req.params.email, req.params.file, function (err, result) {
             if (err) {
-                res.json(errorJson("get", "/users/:email/files/:file", err));
+                res.json(errorJson("get", req.params.file, err));
             } else {
                 res.json(result);
             }
@@ -165,10 +166,21 @@ function addSessionRoutes(app) {
     });
 
     app.post("/users/:email/files/:file", validUser, function (req, res) {
-        log.info(req.params.email + " add file:" + req.params.file + " with body " + JSON.stringify(req.body));
+        log.info(req.params.email + " add file:" + req.params.file);
         db.addUserFile(req.params.email, req.params.file, req.body.data, function (err, result) {
             if (err) {
-                res.json(errorJson("post", "/users/:email/files/:file", err));
+                res.json(errorJson("post", req.params.file, err));
+            } else {
+                res.json(result);
+            }
+        });
+    });
+
+    app.patch("/users/:email/files/:file", validUser, function (req, res) {
+        log.info(req.params.email + " update file:" + req.params.file);
+        db.updateUserFile(req.params.email, req.params.file, req.body.data, function (err, result) {
+            if (err) {
+                res.json(errorJson("patch", req.params.file, err));
             } else {
                 res.json(result);
             }
@@ -179,7 +191,7 @@ function addSessionRoutes(app) {
         log.info(req.params.email + " delete file:" + req.params.file);
         db.removeUserFile(req.params.email, req.params.file, function (err, result) {
             if (err) {
-                res.json(errorJson("delete", "/users/:email/files/:file", err));
+                res.json(errorJson("delete", req.params.file, err));
             } else {
                 res.json(result);
             }

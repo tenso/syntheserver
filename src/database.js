@@ -215,16 +215,14 @@ function updateUserFile(email, name, dataObject, cb) {
     getUserFile(email, name, function (err, result) {
         if (err) {
             cb(err);
-        } else if (result) {
-            if (!result.files) {
-                cb("fileDoesNotExist");
-            } else {
-                userCollection.update({email: email, "files.name": name}, {
-                    "$set": {
-                        "files.$.data": JSON.stringify(dataObject)
-                    }
-                }, {w: w}, cb);
-            }
+        } else if (!result) {
+            cb("fileDoesNotExist");
+        } else {
+            userCollection.update({email: email, "files.name": name}, {
+                "$set": {
+                    "files.$.data": JSON.stringify(dataObject)
+                }
+            }, {w: w}, cb);
         }
     });
 }
