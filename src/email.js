@@ -33,7 +33,7 @@ function sendInvite(to, link) {
         if (err) {
             log.error(err);
         } else {
-            log.info("sent mail:" + JSON.stringify(info));
+            log.info("sent mail ok");
         }
     });
 }
