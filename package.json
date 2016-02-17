@@ -6,7 +6,8 @@
         "express": "4.13.4",
         "mongodb": "2.1.6",
         "express-session": "1.13.0",
-        "body-parser": "1.15.0"
+        "body-parser": "1.15.0",
+        "nodemailer": "2.1.0"
     },
     "repository": {
         "type": "git",
