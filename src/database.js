@@ -1,4 +1,5 @@
 /*global exports*/
+/*global require*/
 
 "use strict";
 
@@ -11,7 +12,8 @@ var db,
         info: 1,
         settings: 1,
         "files.name": 1
-    };
+    },
+    uuid = require("node-uuid");
 
 function setDb(database) {
     db = database;
@@ -49,7 +51,7 @@ function getUser(email, cb) {
 }
 
 function addUser(name, email, password, cb) {
-    if (name === "" || email === "" || password === "") {
+    if (email === "" || password === "") {
         cb("nullData");
     } else {
         userExist(email, function (err, result) {
@@ -62,7 +64,10 @@ function addUser(name, email, password, cb) {
                     email: email,
                     info: {
                         name: name,
-                        password: password
+                        password: password,
+                        validated: false,
+                        addDate: new Date().toISOString(),
+                        uuid: uuid.v4()
                     },
                     settings: {
                         debug: false
@@ -99,6 +104,22 @@ function updateUser(email, newEmail, newName, newPassword, cb) {
                         password: newPassword,
                         admin: false
                     }
+                }
+            }, {w: w}, cb);
+        } else {
+            cb("noUser");
+        }
+    });
+}
+
+function validateUser(email, cb) {
+    userExist(email, function (err, result) {
+        if (err) {
+            cb(err);
+        } else if (result) {
+            userCollection.update({email: email}, {
+                "$set": {
+                    "info.validated": true
                 }
             }, {w: w}, cb);
         } else {
@@ -236,6 +257,7 @@ exports.getUser = getUser;
 exports.getUsers = getUsers;
 exports.removeUser = removeUser;
 exports.updateUser = updateUser;
+exports.validateUser = validateUser;
 exports.setAdmin = setAdmin;
 
 exports.addUserFile = addUserFile;

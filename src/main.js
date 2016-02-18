@@ -19,7 +19,10 @@ var db = require("./database.js"),
     bodyParser = require("body-parser"),
     app = express(),
     staticContentPath = "../../synthesound/src/",
-    noLogin = false;
+    debug = {
+        noLogin: false,
+        noEmail: true
+    };
 
 log.info("start");
 
@@ -35,7 +38,7 @@ function errorJson(module, path, info) {
 }
 //FIXME: req.session.admin should probably not be in session cookie!
 function validUser(req, res, next) {
-    if (noLogin) {
+    if (debug.noLogin) {
         next();
     } else if (req.session.email === req.params.email || req.session.admin) {
         next();
@@ -46,7 +49,7 @@ function validUser(req, res, next) {
 }
 
 function validAdminUser(req, res, next) {
-    if (noLogin) {
+    if (debug.noLogin) {
         next();
     } else if (req.session.email && req.session.admin) {
         next();
@@ -96,18 +99,88 @@ function addSessionRoutes(app) {
                 log.error("failed to login:" + err);
                 res.sendStatus(401);
             } else if (result) {
-                if (result.info.password === req.query.password) {
-                    req.session.email = result.email; //FIXME: better: _id
-                    req.session.admin = result.info.admin;
-                    log.info("login:" + result.email + " admin:" + result.info.admin);
-                    getUser(req.session.email, res);
+                if (result.info.validated) {
+                    if (result.info.password === req.query.password) {
+                        req.session.email = result.email; //FIXME: better: _id
+                        req.session.admin = result.info.admin;
+                        log.info("login:" + result.email + " admin:" + result.info.admin);
+                        getUser(req.session.email, res);
+                    } else {
+                        log.warn("failed login, wrong password:" + req.query.email);
+                        res.sendStatus(401);
+                    }
                 } else {
-                    log.warn("failed login, wrong password:" + req.query.email);
+                    log.warn("failed login, user not validated:" + req.query.email);
                     res.sendStatus(401);
                 }
             } else {
                 log.warn("failed login, no user:" + req.query.email);
                 res.sendStatus(401);
+            }
+        });
+    });
+
+    app.get("/register", function (req, res) {
+        var validationLink;
+        db.addUser("", req.query.email, req.query.password, function (err, result) {
+            if (err) {
+                log.error("failed to register:" + err);
+                res.json(errorJson("get", "/register", err));
+            } else {
+                db.getUser(req.query.email, function (err, result) {
+                    if (err) {
+                        res.json(errorJson("get", "/register", err));
+                    } else {
+                        res.json({
+                            ok: 1,
+                            registerd: 1,
+                            validated: 0
+                        });
+                    }
+                    validationLink = req.protocol + "://" + req.hostname +
+                        "/register/validate?email=" + req.query.email + "&" + "uuid=" + result.info.uuid;
+
+                    if (debug.noEmail) {
+                        console.log("would have sent link:" + validationLink);
+                    } else {
+                        email.sendInvite(req.query.email, validationLink);
+                    }
+                });
+            }
+        });
+    });
+
+    app.get("/register/validate", function (req, res) {
+        var validationLink;
+        db.getUser(req.query.email, function (err, result) {
+            if (err) {
+                log.error("failed to validate, get user failed:" + err);
+                //FIXME: reply with human-readable
+                res.json(errorJson("get", "/register/validate", err));
+            } else {
+                if (result.info.uuid === req.query.uuid) {
+                    db.validateUser(req.query.email, function (err, result) {
+                        if (err) {
+                            log.error("failed to validate user:" + err);
+                            //FIXME: reply with human-readable
+                            res.json(errorJson("get", "/register/validate", err));
+                        } else {
+                            log.info("validated:" + req.query.email);
+                            res.json({
+                                ok: 1,
+                                registerd: 1,
+                                validated: 1
+                            });
+                        }
+                    });
+                } else {
+                    log.error("failed to validate user: wrong uuid");
+                    res.json({
+                        ok: 0,
+                        registerd: 1,
+                        validated: 0
+                    });
+                }
             }
         });
     });
