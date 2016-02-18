@@ -21,7 +21,7 @@ function sendInvite(to, link) {
 
     if (!config) {
         try {
-            confData = fs.readFileSync("../mail_config.json", "utf8");
+            confData = fs.readFileSync("../cfg_user/mail_config.json", "utf8");
             config = JSON.parse(confData);
         } catch (err) {
             log.error("read mail config:" + err);
