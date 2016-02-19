@@ -1,3 +1,5 @@
+/*jslint node: true */
+
 /*global exports*/
 /*global require*/
 
@@ -62,11 +64,12 @@ function addUser(name, email, password, cb) {
             } else {
                 userCollection.insert({
                     email: email,
+                    willBeDeletedStartingFrom: new Date(),
+                    createdAt: new Date(),
                     info: {
                         name: name,
                         password: password,
                         validated: false,
-                        addDate: new Date().toISOString(),
                         uuid: uuid.v4()
                     },
                     settings: {
@@ -120,12 +123,20 @@ function validateUser(email, cb) {
             userCollection.update({email: email}, {
                 "$set": {
                     "info.validated": true
+                },
+                "$unset": {
+                    "willBeDeletedStartingFrom": ""
                 }
             }, {w: w}, cb);
         } else {
             cb("noUser");
         }
     });
+}
+
+function setRemoveAllUnvalidated(seconds, cb) {
+    userCollection.dropIndexes();
+    userCollection.createIndex({"willBeDeletedStartingFrom": 1}, {expireAfterSeconds: seconds}, undefined, cb);
 }
 
 function setAdmin(email, admin, cb) {
@@ -259,7 +270,7 @@ exports.removeUser = removeUser;
 exports.updateUser = updateUser;
 exports.validateUser = validateUser;
 exports.setAdmin = setAdmin;
-
+exports.setRemoveAllUnvalidated = setRemoveAllUnvalidated;
 exports.addUserFile = addUserFile;
 exports.getUserFile = getUserFile;
 exports.getUserFileNames = getUserFileNames;

@@ -1,6 +1,11 @@
+/*jslint nomen: true*/
+/*jslint es5: true*/
+/*jslint node: true */
+
 /*global require*/
 /*global log*/
 /*global process*/
+/*global __dirname*/
 
 /*C: POST
   R: GET
@@ -16,6 +21,7 @@ var db = require("./database.js"),
     express = require("express"),
     session = require("express-session"),
     email = require("./email.js"),
+    html = require("./html.js"),
     bodyParser = require("body-parser"),
     app = express(),
     staticContentPath = "../../synthesound/src/",
@@ -141,7 +147,7 @@ function addSessionRoutes(app) {
                         "/register/validate?email=" + req.query.email + "&" + "uuid=" + result.info.uuid;
 
                     if (debug.noEmail) {
-                        console.log("would have sent link:" + validationLink);
+                        log.info("would have sent link:" + validationLink);
                     } else {
                         email.sendInvite(req.query.email, validationLink);
                     }
@@ -155,30 +161,36 @@ function addSessionRoutes(app) {
         db.getUser(req.query.email, function (err, result) {
             if (err) {
                 log.error("failed to validate, get user failed:" + err);
-                //FIXME: reply with human-readable
-                res.json(errorJson("get", "/register/validate", err));
+                res.sendFile("validation_error.html", {root: __dirname + "/html/"}, function (err) {
+                    if (err) {
+                        log.error(err);
+                    }
+                });
             } else {
                 if (result.info.uuid === req.query.uuid) {
                     db.validateUser(req.query.email, function (err, result) {
                         if (err) {
                             log.error("failed to validate user:" + err);
-                            //FIXME: reply with human-readable
-                            res.json(errorJson("get", "/register/validate", err));
+                            res.sendFile("validation_error.html", {root: __dirname + "/html/"}, function (err) {
+                                if (err) {
+                                    log.error(err);
+                                }
+                            });
                         } else {
                             log.info("validated:" + req.query.email);
-                            res.json({
-                                ok: 1,
-                                registerd: 1,
-                                validated: 1
+                            res.sendFile("validation_success.html", {root: __dirname + "/html/"}, function (err) {
+                                if (err) {
+                                    log.error(err);
+                                }
                             });
                         }
                     });
                 } else {
                     log.error("failed to validate user: wrong uuid");
-                    res.json({
-                        ok: 0,
-                        registerd: 1,
-                        validated: 0
+                    res.sendFile("validation_error.html", {root: __dirname + "/html/"}, function (err) {
+                        if (err) {
+                            log.error(err);
+                        }
                     });
                 }
             }
@@ -276,6 +288,7 @@ function addSessionRoutes(app) {
 }
 
 function dbConnected() {
+    var cleanDbTimer;
     app.use(bodyParser.json());
     addOpenRoutes(app);
     addSession(app);
@@ -285,6 +298,15 @@ function dbConnected() {
     app.listen(80, function () {
         log.info("server up");
     });
+
+    db.setRemoveAllUnvalidated(3600, function (err, result) {
+        if (err) {
+            log.error(err);
+        } else {
+            log.info(result);
+        }
+    });
+
     //FIXME: db.close() on exit
 }
 
@@ -310,8 +332,14 @@ MongoClient.connect(url, function (err, database) {
                         if (err) {
                             log.error("failed to set admin:" + err);
                         } else {
-                            log.info("admin OK");
-                            dbConnected();
+                            db.validateUser("admin", function (err, result) {
+                                if (err) {
+                                    log.error("failed to validate admin:" + err);
+                                } else {
+                                    log.info("admin OK");
+                                    dbConnected();
+                                }
+                            });
                         }
                     });
                 }

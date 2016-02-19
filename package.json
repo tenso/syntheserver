@@ -14,5 +14,8 @@
         "type": "git",
         "url": "git+https://github.com/tenso/syntheserver.git"
     },
+    "scripts": {
+        "start": "node src/main.js"
+    },
     "license": "GPL-3.0"
 }

@@ -1,3 +1,5 @@
+/*jslint node: true */
+
 /*global console*/
 /*global exports*/
 /*global Date*/
