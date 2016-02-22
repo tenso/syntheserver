@@ -26,7 +26,7 @@ var db = require("./database.js"),
     staticContentPath = "../../synthesound/src/",
     debug = {
         noLogin: false,
-        noEmail: true
+        noEmail: false
     };
 
 log.info("start");
@@ -336,6 +336,9 @@ MongoClient.connect(url, function (err, database) {
                                     log.error("failed to validate admin:" + err);
                                 } else {
                                     log.info("admin OK");
+                                    log.warn("----------------------------------------------------");
+                                    log.warn("You must change admin password through ./admin.sh !!");
+                                    log.warn("----------------------------------------------------");
                                     dbConnected();
                                 }
                             });
