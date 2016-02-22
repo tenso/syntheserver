@@ -7,5 +7,5 @@ if [ ! `whoami` = "root" ];then
     exit 1
 fi
 
-cd /opt/synthesounds/syntheserver/
-npm start &> /dev/null&
+cd /opt/synthesounds/syntheserver/src/
+nodejs main.js &> /dev/null&
