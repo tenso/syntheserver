@@ -215,7 +215,18 @@ function addSessionRoutes(app) {
         });
     });
 
+    app.get("/logs", validAdminUser, function (req, res) {
+        db.getLogs(function (err, result) {
+            if (err) {
+                res.json(errorJson("get", "*", err));
+            } else {
+                res.json(result);
+            }
+        });
+    });
+
     app.get("/self", function (req, res) {
+        log.info("request self:" + req.connection.remoteAddress);
         if (req.session.email) {
             getUser(req.session.email, res);
         } else {
@@ -286,6 +297,14 @@ function addSessionRoutes(app) {
     return app;
 }
 
+function dbLog(str, type) {
+    db.addLog(str, type, function (err, result) {
+        if (err) {
+            console.log("ERROR:" + err);
+        }
+    });
+}
+
 function dbConnected() {
     var cleanDbTimer;
     app.use(bodyParser.json());
@@ -302,7 +321,7 @@ function dbConnected() {
         if (err) {
             log.error(err);
         } else {
-            log.info(result);
+            log.info("remove unvalidated on: " + result + " after 3600s");
         }
     });
 
@@ -315,8 +334,18 @@ MongoClient.connect(url, function (err, database) {
         log.info(err);
         process.exit(1);
     }
-    log.info("connected to: " + url);
     db.setDb(database);
+    log.setup(dbLog);
+
+    db.setLogRotation(2419200, function (err, result) {
+        if (err) {
+            log.error(err);
+        } else {
+            log.info("rotate log on: " + result + " after " + 2419200 / (60 * 60 * 24) + " days");
+        }
+    });
+
+    log.info("connected to: " + url);
 
     db.userExist("admin", function (err, result) {
         if (err) {

@@ -5,6 +5,11 @@
 /*global Date*/
 "use strict";
 
+var logCb;
+function setup(loggerCb) {
+    logCb = loggerCb;
+}
+
 function pad(value) {
     if (value <= 9) {
         return "0" + value;
@@ -24,18 +29,27 @@ function ts() {
     return y + "-" + M + "-" + d + " " + h + ":" + m + ":" + s + " ";
 }
 
+function log(str, type) {
+    var info = ts() + type + ": " + str;
+    if (typeof logCb === "function") {
+        logCb(str, type);
+    }
+    return console.log(info);
+}
+
 function info(str) {
-    return console.log(ts() + "INFO: " + str);
+    return log(str, "INFO");
 }
 
 function error(str) {
-    return console.log(ts() + "ERROR:" + str);
+    return log(str, "ERROR");
 }
 
 function warn(str) {
-    return console.log(ts() + "WARN: " + str);
+    return log(str, "WARN");
 }
 
+exports.setup = setup;
 exports.info = info;
 exports.error = error;
 exports.warn = warn;

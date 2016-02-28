@@ -7,6 +7,7 @@
 
 var db,
     userCollection,
+    logCollection,
     w = 1,
     userProjection = {
         "_id": 0,
@@ -20,6 +21,7 @@ var db,
 function setDb(database) {
     db = database;
     userCollection = db.collection("users");
+    logCollection = db.collection("logs");
 }
 
 function close() {
@@ -259,6 +261,32 @@ function updateUserFile(email, name, dataObject, cb) {
     });
 }
 
+/** LOGS **/
+function addLog(text, type, cb) {
+    logCollection.insert({
+        type: type,
+        text: text,
+        createdAt: new Date()
+    }, {w: w}, cb);
+}
+
+function getLogs(cb) {
+    var stream = logCollection.find({}).stream(),
+        all = [];
+    stream.on("data", function (item) {
+        all.push(item);
+    });
+    stream.on("end", function (item) {
+        cb(null, all);
+    });
+}
+
+function setLogRotation(seconds, cb) {
+    logCollection.dropIndexes();
+    logCollection.createIndex({"createdAt": 1}, {expireAfterSeconds: seconds}, undefined, cb);
+}
+/** **/
+
 exports.setDb = setDb;
 exports.close = close;
 
@@ -276,3 +304,7 @@ exports.getUserFile = getUserFile;
 exports.getUserFileNames = getUserFileNames;
 exports.removeUserFile = removeUserFile;
 exports.updateUserFile = updateUserFile;
+
+exports.addLog = addLog;
+exports.getLogs = getLogs;
+exports.setLogRotation = setLogRotation;
