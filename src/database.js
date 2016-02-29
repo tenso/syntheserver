@@ -271,7 +271,7 @@ function addLog(text, type, cb) {
 }
 
 function getLogs(cb) {
-    var stream = logCollection.find({}).stream(),
+    var stream = logCollection.find({}, {"_id": 0}).stream(),
         all = [];
     stream.on("data", function (item) {
         all.push(item);
