@@ -25,12 +25,21 @@ var db = require("./database.js"),
     app = express(),
     staticContentPath = "../../synthesound/src/",
     bcrypt = require("bcryptjs"),
+    fs = require("fs"),
+    config,
     debug = {
         noLogin: false,
         noEmail: false
     };
 
 log.info("start");
+
+try {
+    config = JSON.parse(fs.readFileSync("../cfg_user/config.json", "utf8"));
+} catch (err) {
+    log.error("read config:" + err);
+    process.exit(1);
+}
 
 function hash(string) {
     var salt = bcrypt.genSaltSync(10);
@@ -380,7 +389,8 @@ MongoClient.connect(url, function (err, database) {
             log.error("admin failed:" + err);
         } else if (!result) {
             log.warn("admin user missing, adding admin:admin");
-            db.addUser("Administrator", "admin", hash("admin"), function (err, result) {
+            /*FIXME: admin password will not be here: will be in admin.js program*/
+            db.addUser("Administrator", "admin", hash(config.password), function (err, result) {
                 if (err) {
                     log.error("failed to add admin:" + err);
                 } else {
@@ -393,9 +403,6 @@ MongoClient.connect(url, function (err, database) {
                                     log.error("failed to validate admin:" + err);
                                 } else {
                                     log.info("admin OK");
-                                    log.warn("----------------------------------------------------");
-                                    log.warn("You must change admin password through ./admin.sh !!");
-                                    log.warn("----------------------------------------------------");
                                     dbConnected();
                                 }
                             });

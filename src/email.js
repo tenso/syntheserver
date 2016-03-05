@@ -27,6 +27,7 @@ function sendInvite(to, link) {
             config = JSON.parse(confData);
         } catch (err) {
             log.error("read mail config:" + err);
+            process.exit(1);
         }
         transport = nodemailer.createTransport(config);
     }
