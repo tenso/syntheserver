@@ -24,12 +24,22 @@ var db = require("./database.js"),
     bodyParser = require("body-parser"),
     app = express(),
     staticContentPath = "../../synthesound/src/",
+    bcrypt = require("bcryptjs"),
     debug = {
         noLogin: false,
         noEmail: false
     };
 
 log.info("start");
+
+function hash(string) {
+    var salt = bcrypt.genSaltSync(10);
+    return bcrypt.hashSync(string, salt);
+}
+
+function compareHash(string, hashed) {
+    return bcrypt.compareSync(string, hashed);
+}
 
 function errorJson(module, path, info) {
     return {
@@ -105,7 +115,7 @@ function addSessionRoutes(app) {
                 res.sendStatus(401);
             } else if (result) {
                 if (result.info.validated) {
-                    if (result.info.password === req.query.password) {
+                    if (compareHash(req.query.password, result.info.password)) {
                         req.session.email = result.email; //FIXME: better: _id
                         req.session.admin = result.info.admin;
                         log.info("login:" + result.email + " admin:" + result.info.admin);
@@ -127,7 +137,14 @@ function addSessionRoutes(app) {
 
     app.get("/register", function (req, res) {
         var validationLink;
-        db.addUser("", req.query.email, req.query.password, function (err, result) {
+
+        if (!req.query.email || !req.query.password) {
+            log.error("failed to register: no user and/or password supplied");
+            res.json(errorJson("get", "/register", "nullData"));
+            return;
+        }
+
+        db.addUser("", req.query.email, hash(req.query.password), function (err, result) {
             if (err) {
                 log.error("failed to register:" + err);
                 res.json(errorJson("get", "/register", err));
@@ -352,7 +369,7 @@ MongoClient.connect(url, function (err, database) {
             log.error("admin failed:" + err);
         } else if (!result) {
             log.warn("admin user missing, adding admin:admin");
-            db.addUser("admin", "admin", "admin", function (err, result) {
+            db.addUser("Administrator", "admin", hash("admin"), function (err, result) {
                 if (err) {
                     log.error("failed to add admin:" + err);
                 } else {
