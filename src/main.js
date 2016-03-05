@@ -311,6 +311,17 @@ function addSessionRoutes(app) {
         });
     });
 
+    app.delete("/users/:email", validAdminUser, function (req, res) {
+        log.info(req.params.email + " delete user");
+        db.removeUser(req.params.email, function (err, result) {
+            if (err) {
+                res.json(errorJson("delete", req.params.email, err));
+            } else {
+                res.json(result);
+            }
+        });
+    });
+
     return app;
 }
 

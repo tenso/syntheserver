@@ -13,6 +13,8 @@ var db,
         "_id": 0,
         email: 1,
         info: 1,
+        createdAt: 1,
+        willBeDeletedStartingFrom: 1,
         settings: 1,
         "files.name": 1
     },
