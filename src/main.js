@@ -30,7 +30,8 @@ var db = require("./database.js"),
     debug = {
         noLogin: false,
         noEmail: false
-    };
+    },
+    ver = "1.1.1";
 
 log.info("start");
 
@@ -349,7 +350,7 @@ function dbConnected() {
     addSession(app);
     addSessionRoutes(app);
 
-    log.info("start server on port 80");
+    log.info("start server v." + ver + " on port 80");
     app.listen(80, function () {
         log.info("server up");
     });
@@ -383,6 +384,8 @@ MongoClient.connect(url, function (err, database) {
     });
 
     log.info("connected to: " + url);
+    log.info("-------------------------");
+    log.info("log to db from this point");
 
     db.userExist("admin", function (err, result) {
         if (err) {
